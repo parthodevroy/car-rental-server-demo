@@ -4,12 +4,13 @@ const cors = require("cors");
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB URI =
+// MongoDB URI
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, {
   serverApi: {
@@ -21,51 +22,64 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const database = client.db("car-rental-db-demo");
-    const carsCollection = database.collection("all-cars");
-    // const bookingsCollection = database.collection("bookings");
-    // const contactCollection = database.collection("contactInfo");
+    
+    await client.connect();
 
-    // get all cars API
-    app.get('/cars', async (req, res) => {
-      const cursor = carsCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
+    const database = client.db("hair-store");
+    const servicesCollection = database.collection("services");
+
+    console.log("Successfully Connected MongDB!");
+
+    app.get('/service', async (req, res) => {
+      try {
+        const cursor = servicesCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "problem to get data ", error: error.message });
+      }
     });
 
-    // . get car details API
-    app.get('/cars/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }; 
-      const result = await carsCollection.findOne(query);
-      res.send(result);
+    app.get('/service/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({
+            message: "Invalid ID"
+          });
+        }
+
+        const result = await servicesCollection.findOne({
+          _id: new ObjectId(id)
+        });
+
+        if (!result) {
+          return res.status(404).send({
+            message: "Service not found"
+          });
+        }
+
+        res.send(result);
+
+      } catch (error) {
+        res.status(500).send({
+          message: error.message
+        });
+      }
     });
 
-    // if need to new booking save fro buyer API
-    // app.post('/bookings', async (req, res) => {
-    //   const booking = req.body;
-    //   const result = await bookingsCollection.insertOne(booking);
-    //   res.send(result);
-    // });
-
-    // . save contact information for buyer API
-    // app.post('/contact-info', async (req, res) => {
-    //   const info = req.body;
-    //   const result = await contactCollection.insertOne(info);
-    //   res.send(result);
-    // });
-
-    console.log("Connected to MongoDB successfully!");
-  } finally {
-
+  } catch (error) {
+    console.error("database connection problem:", error);
   }
 }
+
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  res.send('Car Rental Server is Running!');
+  res.send('Diamond Style Braids Server Is Running...');
 });
 
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  console.log(`this server is running : ${port}`);
 });
